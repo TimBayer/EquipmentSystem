@@ -6,22 +6,28 @@
 #include "Items/CesItem.h"
 
 
-UCesInventoryComponent::UCesInventoryComponent()
-{
-    PrimaryComponentTick.bCanEverTick = false;
-
-    SlotCount = 30;
-
-    for (int i = 0; i < SlotCount; ++i)
-    {
-        SlottedItems.Add(i);
-    }
-}
-
-
 void UCesInventoryComponent::BeginPlay()
 {
     Super::BeginPlay();
+
+    for (int i = 0; i < InitialSlotCount; ++i)
+    {
+        Items.Emplace(FCesItemData(nullptr, 0));
+    }
+
+    SlotCount += InitialSlotCount;
+}
+
+
+bool UCesInventoryComponent::IsValidSlot(const int32 SlotIndex) const
+{
+    if (Items.IsValidIndex(SlotIndex))
+    {
+        return true;
+    }
+
+    UE_LOG(CesLog, Error, TEXT("UCesInventoryComponent::IsValidSlot - Slot Index is invalid."))
+    return false;
 }
 
 
@@ -29,72 +35,71 @@ bool UCesInventoryComponent::AddItem(FCesItemData ItemData)
 {
     bool bItemWasAdded = false;
 
-    // increase item count
-    for (auto& Elem : SlottedItems)
+    for (int i = 0; i < SlotCount; ++i)
     {
-        if (Elem.Value.Item == ItemData.Item)
-        {
-            Elem.Value.Quantity += ItemData.Quantity;
-            bItemWasAdded = true;
-            break;
-        }
-    }
+        bItemWasAdded = AddItemToSlot(ItemData, i);
 
-    // Add item to first empty slot
-    if (!bItemWasAdded)
-    {
-        for (auto& Elem : SlottedItems)
-        {
-            if (Elem.Value.Quantity == 0)
-            {
-                Elem.Value = ItemData;
-                bItemWasAdded = true;
-                break;
-            }
-        }
-    }
-
-    if (bItemWasAdded && OnInventoryChanged.IsBound())
-    {
-        OnInventoryChanged.Broadcast();
+        if (bItemWasAdded) { break; }
     }
 
     return bItemWasAdded;
 }
 
-
-bool UCesInventoryComponent::AddItemToSlot(FCesItemData ItemData, int32 Slot)
+bool UCesInventoryComponent::AddItemToSlot(FCesItemData ItemData, int32 SlotIndex)
 {
     bool bItemWasAdded = false;
 
-    if (!SlottedItems.Contains(Slot))
-    {
-        return false;
-    }
+    if (!IsValidSlot(SlotIndex)) return false;
 
-    // Increase item count if item is already in that slot
-    if (SlottedItems[Slot].Item == ItemData.Item)
+    // Increase item count if item is already in that slot and they are stackable
+    if (Items[SlotIndex].Item == ItemData.Item && Items[SlotIndex].Item->IsStackable)
     {
-        SlottedItems[Slot].Quantity += ItemData.Quantity;
+        Items[SlotIndex].Quantity += ItemData.Quantity;
         bItemWasAdded = true;
     }
 
-    if (SlottedItems[Slot].Quantity == 0)
+    // Add item to empty slot
+    if (Items[SlotIndex].Quantity == 0)
     {
-        SlottedItems[Slot] = ItemData;
+        Items[SlotIndex] = ItemData;
         bItemWasAdded = true;
     }
 
-    if (bItemWasAdded && OnInventoryChanged.IsBound())
+    if (bItemWasAdded && OnInventoryItemAdded.IsBound())
     {
-        OnInventoryChanged.Broadcast();
+        OnInventoryItemAdded.Broadcast(SlotIndex, Items[SlotIndex]);
     }
 
     return bItemWasAdded;
 }
 
 
-void UCesInventoryComponent::EmptySlot(int32 Slot)
+bool UCesInventoryComponent::EmptySlot(int32 SlotIndex)
 {
-    SlottedItems[Slot] = FCesItemData();
+    if (!IsValidSlot(SlotIndex)) return false;
+
+    FCesItemData RemovedItem = Items[SlotIndex];
+    
+    Items[SlotIndex].Item = nullptr;
+    Items[SlotIndex].Quantity = 0;
+
+    if (OnInventoryItemRemoved.IsBound())
+    {
+        OnInventoryItemRemoved.Broadcast(SlotIndex, RemovedItem);
+    }
+
+    return true;
+}
+
+
+bool UCesInventoryComponent::IsSlotFilled(int32 SlotIndex)
+{
+    if (!IsValidSlot(SlotIndex)) return false;
+
+    if (Items[SlotIndex].IsValid())
+    {
+        return true;
+    }
+
+    return false;
 }

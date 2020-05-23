@@ -8,9 +8,8 @@
 
 #include "CesItemSlotWidget.generated.h"
 
-/**
- * 
- */
+
+
 UCLASS(Abstract)
 class EQUIPMENTSYSTEM_API UCesItemSlotWidget : public UUserWidget
 {
@@ -18,10 +17,14 @@ class EQUIPMENTSYSTEM_API UCesItemSlotWidget : public UUserWidget
 
 
 public:
+    // InventoryComponent this slot belongs to
+    UPROPERTY(BlueprintReadOnly, Category="Inventory Slot", meta=( ExposeOnSpawn="true"))
+    UCesInventoryComponent* InventoryComponent;
+    
     UPROPERTY(EditDefaultsOnly)
     TSubclassOf<class UCesItemDragVisual> ItemDragVisualClass;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory Slot", meta=( ExposeOnSpawn="true", DisplayName="Item Data" ))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory Slot", meta=( ExposeOnSpawn="true", DisplayName= "Item Data" ))
     FCesItemData ItemData;
 
     // The type of item this slot accepts
@@ -29,22 +32,22 @@ public:
     EInvSlotAllowance SlotAllowance;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory Slot", meta=( ExposeOnSpawn="true"))
-    EItemSlotLocation SlotLocation;
-    
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Inventory Slot", meta=( ExposeOnSpawn="true"))
     int32 SlotIndex;
 
-    UFUNCTION(BlueprintImplementableEvent, Category = "Inventory Slot")
-    void ItemAdded();
+    UFUNCTION(BlueprintCallable, Category = "Inventory Slot")
+    void SetInventoryComponent(UCesInventoryComponent* NewInventoryComponent);
+    
+    UFUNCTION()
+    void OnItemAddedNative(int32 AddedItemSlotIndex, FCesItemData AddedItem);
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Inventory Slot")
-    void ItemDragStarted();
+    void OnItemAdded(FCesItemData Item);
+
+    UFUNCTION()
+    void OnItemRemovedNative(int32 RemovedSlotIndex, FCesItemData RemovedItem);
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Inventory Slot")
-    void ItemDragCancelled();
-
-    UFUNCTION(BlueprintImplementableEvent, Category = "Inventory Slot")
-    void ItemRemoved();
+    void OnItemRemoved();
 
 
 protected:
@@ -56,12 +59,11 @@ protected:
 
     virtual void NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 
+    // Executes on the widget the drop finished on
     virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 
     UDragDropOperation* CreateItemDrag();
 
-
 private:
-    UPROPERTY()
-    UCesInventoryComponent* Inventory;
+    
 };

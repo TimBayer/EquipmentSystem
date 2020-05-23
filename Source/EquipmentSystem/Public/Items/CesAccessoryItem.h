@@ -18,7 +18,4 @@ class EQUIPMENTSYSTEM_API UCesAccessoryItem : public UCesEquipableItem
 public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item)
     EAccessoryItemType AccessoryType;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Consumable)
-    TSubclassOf<AActor> AccessoryActor;
 };

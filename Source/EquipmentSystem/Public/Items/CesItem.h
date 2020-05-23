@@ -35,10 +35,7 @@ public:
     FSlateBrush ItemIcon;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item)
-    int32 Weight;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item)
-    FVector2D BagSize;
+    bool IsStackable;
 
     // The type of slots this item is allowed to be placed in
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Inventory Slot")

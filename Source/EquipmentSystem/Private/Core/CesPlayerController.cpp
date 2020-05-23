@@ -2,14 +2,11 @@
 
 
 #include "Core/CesPlayerController.h"
-#include "Inventory/CesInventoryComponent.h"
+
 
 
 ACesPlayerController::ACesPlayerController()
 {
-    // Setup Components
-    InventoryComponent = CreateDefaultSubobject<UCesInventoryComponent>(TEXT("InventoryComponent"));
-
     bShowMouseCursor = true;
 }
 
@@ -17,6 +14,6 @@ ACesPlayerController::ACesPlayerController()
 void ACesPlayerController::BeginPlay()
 {
     Super::BeginPlay();
-    
-    SetInputMode(FInputModeGameAndUI()); 
+
+    SetInputMode(FInputModeGameAndUI());
 }

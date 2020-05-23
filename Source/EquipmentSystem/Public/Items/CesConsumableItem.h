@@ -23,7 +23,4 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Consumable)
     int32 MaxStackSize;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Consumable)
-    TSubclassOf<AActor> ConsumableActor;
 };

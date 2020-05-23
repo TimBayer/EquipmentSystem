@@ -7,9 +7,8 @@
 #include "Blueprint/DragDropOperation.h"
 #include "CesDragDropItem.generated.h"
 
-/**
- * 
- */
+
+
 UCLASS()
 class EQUIPMENTSYSTEM_API UCesDragDropItem : public UDragDropOperation
 {
@@ -20,5 +19,11 @@ public:
     FCesItemData ItemData;
 
     UPROPERTY();
-    UCesItemSlotWidget* FromSlot;
+    class UCesInventoryComponent* FromInventoryComponent;
+
+    UPROPERTY();
+    int32 FromSlotIndex;
+
+    UPROPERTY();
+    UCesItemSlotWidget* FromSlotWidget;
 };

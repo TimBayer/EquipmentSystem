@@ -18,10 +18,4 @@ class EQUIPMENTSYSTEM_API UCesArmorItem : public UCesEquipableItem
 public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Item)
     EArmorItemType ArmorType;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Consumable)
-    TSubclassOf<AActor> ArmorActor;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
-    float BaseArmor;
 };

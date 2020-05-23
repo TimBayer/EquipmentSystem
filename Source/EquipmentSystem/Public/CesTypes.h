@@ -7,9 +7,23 @@
 
 
 UENUM(BlueprintType)
+enum class EEquipmentSlotType : uint8
+{
+    MainHand,
+    OffHand,
+    Helmet,
+    Chest,
+    Legs,
+    Hands,
+    Feet,
+    Ring,
+    Amulet
+};
+
+
+UENUM(BlueprintType)
 enum class EArmorItemType : uint8
 {
-    Weapon,
     Helmet,
     Chest,
     Legs,
@@ -50,6 +64,9 @@ enum class EConsumableType : uint8
 };
 
 
+/**
+ * Used to determine what type of item is allowed to be placed in an item slot
+ */
 UENUM(BlueprintType)
 enum class EInvSlotAllowance : uint8
 {
@@ -63,15 +80,6 @@ enum class EInvSlotAllowance : uint8
     Feet,
     Ring,
     Amulet
-};
-
-
-UENUM(BlueprintType)
-enum class EItemSlotLocation : uint8
-{
-    InventorySlot,
-    EquipmentSlot,
-    QuickSlot
 };
 
 
@@ -110,4 +118,36 @@ struct EQUIPMENTSYSTEM_API FCesItemData
     {
         return !(*this == OtherItem);
     }
+
+
+    // Is this a valid item
+    bool IsValid() const
+    {
+        return (Item != nullptr && Quantity > 0);
+    }
+};
+
+
+USTRUCT(BlueprintType)
+struct EQUIPMENTSYSTEM_API FCesEquipmentStats
+{
+    GENERATED_BODY()
+
+
+    FCesEquipmentStats()
+        : Damage(0), Armor(0)
+    {
+    }
+
+
+    FCesEquipmentStats(float InDamage, float InArmor)
+        : Damage(0), Armor(0)
+    {
+    }
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item)
+    float Damage;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Item)
+    float Armor;
 };

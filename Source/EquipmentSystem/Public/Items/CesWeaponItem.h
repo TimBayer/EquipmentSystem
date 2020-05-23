@@ -18,10 +18,4 @@ class EQUIPMENTSYSTEM_API UCesWeaponItem : public UCesEquipableItem
 public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
     EWeaponItemType WeaponType;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
-    TSubclassOf<AActor> WeaponActor;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Weapon)
-    float BaseDamage;
 };

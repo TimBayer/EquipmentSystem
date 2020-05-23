@@ -10,7 +10,47 @@
 
 void UCesItemSlotWidget::NativeConstruct()
 {
-    Inventory = GetOwningPlayer()->FindComponentByClass<UCesInventoryComponent>();
+    Super::NativeConstruct();
+
+    if (!InventoryComponent)
+    {
+        UE_LOG(CesLog, Log, TEXT( "UCesItemSlotWidget::NativeConstruct: SlotWidget currently not assoiciated with any InventoryComponent!" ))
+    }
+
+    SetInventoryComponent(InventoryComponent);
+}
+
+
+void UCesItemSlotWidget::SetInventoryComponent(UCesInventoryComponent* NewInventoryComponent)
+{
+    if (NewInventoryComponent)
+    {
+        InventoryComponent = NewInventoryComponent;
+
+        // Item Events
+        InventoryComponent->OnInventoryItemAdded.AddDynamic(this, &UCesItemSlotWidget::OnItemAddedNative);
+        InventoryComponent->OnInventoryItemRemoved.AddDynamic(this, &UCesItemSlotWidget::OnItemRemovedNative);
+    }
+}
+
+
+void UCesItemSlotWidget::OnItemAddedNative(int32 AddedItemSlotIndex, FCesItemData AddedItem)
+{
+    if (AddedItemSlotIndex == SlotIndex)
+    {
+        ItemData = AddedItem;
+        OnItemAdded(AddedItem);
+    }
+}
+
+
+void UCesItemSlotWidget::OnItemRemovedNative(int32 RemovedSlotIndex, FCesItemData RemovedItem)
+{
+    if (RemovedSlotIndex == SlotIndex)
+    {
+        ItemData = FCesItemData();
+        OnItemRemoved();
+    }
 }
 
 
@@ -26,7 +66,8 @@ FReply UCesItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, 
 }
 
 
-void UCesItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
+void UCesItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent,
+                                              UDragDropOperation*& OutOperation)
 {
     Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
 
@@ -39,25 +80,25 @@ void UCesItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const
 
 UDragDropOperation* UCesItemSlotWidget::CreateItemDrag()
 {
+    // Create object that will carry our item data to the new slot widget
     UCesDragDropItem* DragDropOperation = NewObject<UCesDragDropItem>();
 
-    if (ItemData.Item && ItemData.Quantity > 0)
+    if (ItemData.IsValid() && InventoryComponent)
     {
         if (ItemDragVisualClass)
         {
-            // Add the actual item data to the drag operation
+            // Add data required for drop operation
             DragDropOperation->ItemData = ItemData;
+            DragDropOperation->FromInventoryComponent = InventoryComponent;
+            DragDropOperation->FromSlotIndex = SlotIndex;
+            DragDropOperation->FromSlotWidget = this;
 
             // Create and populate the widget we see while dragging
             UCesItemDragVisual* DragVisual = CreateWidget<UCesItemDragVisual>(GetOwningPlayer(), ItemDragVisualClass);
             DragVisual->ItemData = ItemData;
-
             DragDropOperation->DefaultDragVisual = DragVisual;
-            DragDropOperation->Pivot = EDragPivot::MouseDown;
-            DragDropOperation->FromSlot = this;
 
-            // Notify Blueprints Item was removed
-            ItemDragStarted();
+            DragDropOperation->Pivot = EDragPivot::MouseDown;
         }
         else
         {
@@ -73,57 +114,73 @@ void UCesItemSlotWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropE
 {
     Super::NativeOnDragCancelled(InDragDropEvent, InOperation);
 
-    ItemDragCancelled();
-
     // Set input mode back
     GetOwningPlayer()->SetInputMode(FInputModeGameAndUI());
-    
-    GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green, TEXT("Item Dropped Cancelled!"));
 }
 
 
-bool UCesItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+bool UCesItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
+                                      UDragDropOperation* InOperation)
 {
     Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
 
     // Set input mode back
     GetOwningPlayer()->SetInputMode(FInputModeGameAndUI());
 
-    if (!Inventory)
+    if (!InventoryComponent)
     {
-        UE_LOG(CesLog, Error, TEXT("UCesItemSlotWidget::NativeOnDrop - InventoryComponent not found!"))
+        UE_LOG(CesLog, Error, TEXT("UCesItemSlotWidget::NativeOnDrop - InventoryComponent not found for this slot!"))
+        return false;
     }
-    
+
     UCesDragDropItem* DropOperation = Cast<UCesDragDropItem>(InOperation);
-    if (DropOperation && DropOperation->ItemData.Quantity > 0)
+    if (DropOperation && DropOperation->ItemData.IsValid())
     {
+        // If we are dropping onto the same slot, do nothing
+        if (DropOperation->FromSlotWidget == this)
+        {
+            return false;
+        }
+
+        // If the item is compatible with the slot type, allow the drop to take place
         if (SlotAllowance == EInvSlotAllowance::AllItems || DropOperation->ItemData.Item->SlotAllowance == SlotAllowance)
-        { 
-            // Add item to new slot
-            const bool bItemAdded = Inventory->AddItemToSlot(DropOperation->ItemData, SlotIndex);
+        {
+            // Attempt to add item to current slot
+            const bool bItemAdded = InventoryComponent->AddItemToSlot(DropOperation->ItemData, SlotIndex);
 
             if (bItemAdded)
             {
-                GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green,
-                    FString::Printf(TEXT("%s dropped to %s slot. (Allowed)"), *DropOperation->ItemData.Item->ItemName.ToString(), *this->GetLabelText().ToString()));
-                
-                
                 // Remove item from previous Inventory slot
-                Inventory->EmptySlot(DropOperation->FromSlot->SlotIndex);
-
-                // Let previous slot widget know item was removed
-                DropOperation->FromSlot->ItemRemoved();
-                    
-                // Notify Blueprints Item was added
-                ItemAdded();
-
+                DropOperation->FromInventoryComponent->EmptySlot(DropOperation->FromSlotIndex);
                 return true;
             }
 
-           return false;
+            // If there is a valid item in this slot and swap slot is valid for this slots current item
+            // then attempt to swap items
+            if (ItemData.IsValid() &&
+                (DropOperation->FromSlotWidget->SlotAllowance == EInvSlotAllowance::AllItems ||
+                    DropOperation->FromSlotWidget->SlotAllowance == ItemData.Item->SlotAllowance))
+            {
+                //UE_LOG(CesLog, Warning, TEXT( "current target: %s"), *ItemData.Item->ItemName.ToString())
+                //UE_LOG(CesLog, Warning, TEXT( "Swap target: %s"), *DropOperation->ItemData.Item->ItemName.ToString())
+
+                // Store current item
+                FCesItemData CurrentItemData = ItemData; // InventoryComponent->Items[SlotIndex];
+
+                // Clear slots so they accept the new items
+                InventoryComponent->EmptySlot(SlotIndex);
+                DropOperation->FromInventoryComponent->EmptySlot(DropOperation->FromSlotIndex);
+
+                //Swap items
+                bool bDidSwapTarget = DropOperation->FromInventoryComponent->AddItemToSlot(CurrentItemData, DropOperation->FromSlotIndex);
+                bool bDidSwapLocal = InventoryComponent->AddItemToSlot(DropOperation->ItemData, SlotIndex);
+
+                if (bDidSwapTarget && bDidSwapLocal) { return true; }
+            }
+
+            return false;
         }
-        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Green,
-                            FString::Printf(TEXT("%s dropped to %s slot. (Denied)"), *DropOperation->ItemData.Item->ItemName.ToString(), *this->GetLabelText().ToString()));
+        return false;
     }
     return false;
 }

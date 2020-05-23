@@ -6,8 +6,7 @@
 
 UCesItem::UCesItem()
 {
-    Weight = 0;
-    BagSize = FVector2D(1, 1);
+    IsStackable = false;
 }
 
 

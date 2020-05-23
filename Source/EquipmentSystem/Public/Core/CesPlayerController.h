@@ -6,12 +6,9 @@
 #include "CesPlayerController.generated.h"
 
 
-class UCesInventoryComponent;
+class UCesInventoryContainerComponent;
 
 
-/**
- * 
- */
 UCLASS()
 class EQUIPMENTSYSTEM_API ACesPlayerController : public APlayerController
 {
@@ -20,8 +17,6 @@ class EQUIPMENTSYSTEM_API ACesPlayerController : public APlayerController
 public:
     ACesPlayerController();
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-    UCesInventoryComponent* InventoryComponent;
 
 protected:
     virtual void BeginPlay() override;

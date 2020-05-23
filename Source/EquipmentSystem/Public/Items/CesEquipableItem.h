@@ -16,5 +16,11 @@ class EQUIPMENTSYSTEM_API UCesEquipableItem : public UCesItem
     GENERATED_BODY()
 
 public:
-     UCesEquipableItem();
+    UCesEquipableItem();
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Equipment)
+    TSubclassOf<AActor> EquipmentActor;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment)
+    FCesEquipmentStats Stats;
 };
