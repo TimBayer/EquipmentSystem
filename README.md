@@ -3,6 +3,8 @@
 ### Description
 This is an inventory and equipment system I developed as an example of interoperability between Blueprints and C++.  Unreal Engine systems used include Gameplay Framework, Primary Data Assets, Asset Manager, UMG, and more.
 
+<img src="Screenshot.png" width="1024">
+
 ### Tools
 -   Unreal Engine 4.25
 -   Rider ([https://www.jetbrains.com/lp/rider-unreal/](https://www.jetbrains.com/lp/rider-unreal/))
